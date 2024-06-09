@@ -7,7 +7,7 @@ variable "region" {
 variable "availability_zones" {
   description = "List of availability zones whre our subnets will reside in"
   type = list(string)
-  default = [ "us-east-2a", "us-east-2b", "us-east-2c" ]
+  default = [ "us-east-2a", "us-east-2b"]
 }
 
 variable "vpc_cidr_blocks" {
@@ -19,11 +19,11 @@ variable "vpc_cidr_blocks" {
 variable "vpc_tags" {
   description = "List of name tags for our VPCs"
   type = list(string)
-  default = [ "fonsah-vpc-1", "fonsah-vpc-2", "fonsah-vpc-3"  ]
+  default = [ "vpc-1", "vpc-2", "vpc-3"  ]
 }
 
 variable "subnet_suffixes" {
-  description = "list of names for our subnets"
+  description = "list of suffixes for our subnets"
   type = list(string)
-  default = [ "fonsah-SN-1", "fonsah-SN-2"]
+  default = [ "a", "b"]
 }

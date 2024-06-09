@@ -1,26 +1,26 @@
-resource "aws_vpc" "fonsah-vpc" {
-  for_each   = { for idx, cidr in zip(var.vpc_cidr_blocks, var.vpc_tags) : idx => cidr }
-  cidr_block = each.value
-
-  tags = {
-    Name = "fonsah-vpc-${each.key}"
-  }
-}
-
 locals {
+  vpc_map = { for idx in range(1, length(var.vpc_cidr_blocks) + 1) : idx => { cidr = var.vpc_cidr_blocks[idx - 1], name = var.vpc_tags[idx - 1] } }
+
   subnets = flatten([
-    for vpc_idx, vpc_cidr in var.vpc_cidr_blocks : [
-      for az in var.availability_zones : [
-        for suffix in var.subnet_suffixes : {
-          vpc_idx  = vpc_idx
-          vpc_id   = aws_vpc.fonsah_vpc[vpc_idx].id
-          az       = az
-          suffix   = suffix
-          vpc_cidr = vpc_cidr
-        }
-      ]
+    for vpc_idx in range(1, length(var.vpc_cidr_blocks) + 1) : [
+      for az_idx in range(0, 2) : {
+        vpc_idx = vpc_idx
+        vpc_id  = aws_vpc.fonsah-vpc[vpc_idx].id
+        az      = var.availability_zones[az_idx]
+        suffix  = var.subnet_suffixes[az_idx]
+        vpc_cidr = var.vpc_cidr_blocks[vpc_idx - 1]
+      }
     ]
   ])
+}
+
+resource "aws_vpc" "fonsah-vpc" {
+  for_each   = local.vpc_map
+  cidr_block = each.value.cidr
+
+  tags = {
+    Name = "fonsah-${each.value.name}"
+  }
 }
 
 resource "aws_subnet" "fonsah-subnet" {
@@ -33,6 +33,6 @@ resource "aws_subnet" "fonsah-subnet" {
   availability_zone = each.value.az
 
   tags = {
-    Name = "fonsah-subnet-${each.key}"
+    Name = "fonsah-SN-${each.value.suffix}"
   }
 }
