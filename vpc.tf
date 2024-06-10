@@ -90,3 +90,42 @@ resource "aws_route" "fonsat_nat_route" {
   nat_gateway_id = aws_nat_gateway.fonsah_nat_gw.id
   depends_on = [aws_nat_gateway.fonsah_nat_gw]
 }
+
+resource "aws_iam_role" "fonsah_role" {
+  name = var.role_name
+  assume_role_policy = jsonencode({
+    Version: "2012-10-17"
+    Statement: [
+      {
+        Effect: "Allow",
+        Principal: {
+          Service: "vpc-flow-logs.amazonaws.com"
+        },
+        Action: "sts:AssumeRole"
+      },
+    ]
+  })
+}
+
+resource "aws_cloudwatch_log_group" "fonsah_log_group" {
+  name = var.log_group_name
+  retention_in_days = var.log_retention_period
+}
+
+resource "aws_flow_log" "fonsah_flow_log" {
+  for_each = aws_subnet.fonsah_subnet
+
+  log_destination = "arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.log_group_name}"
+  traffic_type = "ALL"
+  subnet_id = each.value.id
+  iam_role_arn = aws_iam_role.fonsah_role.arn
+  depends_on = [ aws_iam_role.fonsah_role ]
+
+  tags = {
+    Name = "flow-log-${each.key}"
+  }
+}
+
+resource "aws_secur" "name" {
+  
+}

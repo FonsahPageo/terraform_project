@@ -53,3 +53,33 @@ variable "nat_tag" {
   type = string
   default = "fonsah-NAT-GW"
 }
+
+variable "account_id" {
+  description = "AWS account ID"
+  type = number
+  default = "869227219142"
+}
+
+variable "log_group_name" {
+  description = "name of our CloudWatch Log Group"
+  type = string
+  default = "fonsah-project-log-group"
+}
+
+variable "log_retention_period" {
+  description = "retention period in days for logs"
+  type = number
+  default = 30
+}
+
+variable "role_name" {
+  description = "name of the IAM role to deliver VPC logs to CloudWatch"
+  type = string
+  default = "FonsahVPCFLowLogRule"
+}
+
+variable "instance_tag" {
+  description = "tag of the instance to be launched"
+  type = string
+  default = "fonsah-demo"
+}
