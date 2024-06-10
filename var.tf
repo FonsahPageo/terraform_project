@@ -27,3 +27,17 @@ variable "subnet_suffixes" {
   type = list(string)
   default = [ "a", "b"]
 }
+
+variable "ig_tag" {
+  description = "tag for our internet gateway"
+  type = string
+  default = "fonsah-IG"
+}
+
+variable "rt_tags" {
+  description = "tags for our route tables"
+  type = map(any)
+  default = {
+    Name = "fonsah-RT"
+  }
+}
