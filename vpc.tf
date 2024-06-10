@@ -23,6 +23,14 @@ resource "aws_vpc" "fonsah_vpc" {
   }
 }
 
+resource "aws_internet_gateway" "fonsah_ig" {
+  vpc_id = aws_vpc.fonsah_vpc[1].id
+
+  tags = {
+    Name = var.ig_tag
+  }
+}
+
 resource "aws_subnet" "fonsah_subnet" {
   for_each = {
     for subnet in local.subnets : "${subnet.vpc_idx}-${subnet.suffix}" => subnet
