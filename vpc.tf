@@ -78,7 +78,7 @@ resource "aws_eip" "fonsah_eip" {
 resource "aws_nat_gateway" "fonsah_nat_gw" {
   depends_on = [ aws_internet_gateway.fonsah_ig ]
   allocation_id = aws_eip.fonsah_eip.id
-  subnet_id     = aws_subnet.fonsah_subnet["1-b"].id
+  subnet_id     = aws_subnet.fonsah_subnet["1-a"].id
   tags = {
     Name = var.nat_tag
   }
