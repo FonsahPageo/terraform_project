@@ -78,17 +78,14 @@ resource "aws_eip" "fonsah_eip" {
 resource "aws_nat_gateway" "fonsah_nat_gw" {
   depends_on = [ aws_internet_gateway.fonsah_ig ]
   allocation_id = aws_eip.fonsah_eip.id
-  subnet_id     = element([for subnet in aws_subnet.fonsah_subnet : subnet.id if subnet.vpc_id == aws_vpc.fonsah_vpc[1].id && subnet.availability_zone == var.availability_zones[1]], 0)
-
+  subnet_id     = aws_subnet.fonsah_subnet["1-b"].id
   tags = {
     Name = var.nat_tag
   }
 }
 
 resource "aws_route" "fonsat_nat_route" {
-  for_each = aws_subnet.fonsah_subnet
-
-  route_table_id = aws_route_table.fonsah_rt[each.key].id
+  route_table_id = aws_route_table.fonsah_rt["1-b"].id
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id = aws_nat_gateway.fonsah_nat_gw.id
   depends_on = [aws_nat_gateway.fonsah_nat_gw]
