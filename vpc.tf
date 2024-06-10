@@ -125,7 +125,3 @@ resource "aws_flow_log" "fonsah_flow_log" {
     Name = "flow-log-${each.key}"
   }
 }
-
-resource "aws_secur" "name" {
-  
-}
