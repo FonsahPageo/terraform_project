@@ -41,3 +41,15 @@ variable "rt_tags" {
     Name = "fonsah-RT"
   }
 }
+
+variable "eip_tag" {
+  description = "tag for our elastip IP address"
+  type = string
+  default = "fonsah-EIP"
+}
+
+variable "nat_tag" {
+  description = "tag for our NAT Gateway"
+  type = string
+  default = "fonsah-NAT-GW"
+}
