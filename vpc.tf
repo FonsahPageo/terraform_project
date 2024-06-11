@@ -107,21 +107,38 @@ resource "aws_iam_role" "fonsah_role" {
   })
 }
 
+resource "aws_iam_role_policy" "fonsah_policy" {
+  name = var.policy_name
+  role = aws_iam_role.fonsah_role.id
+  policy = jsonencode({
+    Version: "2012-10-17"
+    Statement: [
+      {
+        Effect: "Allow",
+        Action: [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource: "*"
+      }
+    ]
+  })
+}
+
 resource "aws_cloudwatch_log_group" "fonsah_log_group" {
   name = var.log_group_name
   retention_in_days = var.log_retention_period
 }
 
 resource "aws_flow_log" "fonsah_flow_log" {
-  for_each = aws_subnet.fonsah_subnet
+  vpc_id = aws_vpc.fonsah_vpc[1].id
 
   log_destination = "arn:aws:logs:${var.region}:${var.account_id}:log-group:${var.log_group_name}"
   traffic_type = "ALL"
-  subnet_id = each.value.id
   iam_role_arn = aws_iam_role.fonsah_role.arn
   depends_on = [ aws_iam_role.fonsah_role ]
 
   tags = {
-    Name = "flow-log-${each.key}"
+    Name = "Fonsah-project-flow-log"
   }
 }

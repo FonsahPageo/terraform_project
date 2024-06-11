@@ -81,7 +81,7 @@ variable "role_name" {
 variable "instance_tag" {
   description = "name of the instance to be launched"
   type        = string
-  default     = "fonsah-demo"
+  default     = "fonsah-project-server"
 }
 
 # variable "ami_id" {
@@ -92,8 +92,10 @@ variable "instance_tag" {
 
 variable "sg_tag" {
   description = "name of our security group"
-  type        = string
-  default     = "fonsah-project-SG"
+  type        = map(any)
+  default = {
+    Name = "fonsah-project-SG"
+  }
 }
 
 variable "sg_ingress_rules" {
@@ -130,22 +132,28 @@ variable "sg_egress_rules" {
   }))
   default = [
     {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = [ "0.0.0.0/16" ]
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/16"]
     }
   ]
 }
 
 variable "instance_type" {
   description = "the type of server we want to launch"
-  type = string
-  default = "t2.micro"
+  type        = string
+  default     = "t2.micro"
 }
 
 variable "key_name" {
   description = "the key pair to connect to the instance"
-  type = string
-  default = "fonsah_chamberlain_ohio"
+  type        = string
+  default     = "fonsah_chamberlain_ohio"
+}
+
+variable "policy_name" {
+  description = "name of IAM policy that defines the permissions of the role"
+  type        = string
+  default     = "FonsahFlowLogPolicy"
 }

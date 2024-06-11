@@ -23,9 +23,9 @@ resource "aws_security_group" "fonsah_sg" {
       cidr_blocks = egress.value.cidr_blocks
     }
   }
-  tags = {
-    Name = var.sg_tag
-  }
+  tags = merge(var.sg_tag,{
+    Name = "fonsah-SG-${each.key}"
+  })
 }
 
 data "aws_ami" "ubuntu" {
@@ -41,6 +41,6 @@ resource "aws_instance" "fonsah_instance" {
   subnet_id = each.value.id
   
   tags = {
-    Name = var.instance_tag
+    Name = "fonsah-server-${each.key}"
   }
 }
