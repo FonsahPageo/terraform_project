@@ -72,7 +72,7 @@ variable "log_retention_period" {
   default     = 30
 }
 
-variable "role_name" {
+variable "iam_role_name" {
   description = "name of the IAM role to deliver VPC logs to CloudWatch"
   type        = string
   default     = "FonsahVPCFLowLogRule"
@@ -146,14 +146,44 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-variable "key_name" {
+variable "instance_key" {
   description = "the key pair to connect to the instance"
   type        = string
   default     = "fonsah_chamberlain_ohio"
 }
 
-variable "policy_name" {
+variable "iam_policy_name" {
   description = "name of IAM policy that defines the permissions of the role"
   type        = string
   default     = "FonsahFlowLogPolicy"
+}
+
+variable "bucket_name" {
+  description = "name of S3 bucket for backend and flow logs"
+  type        = string
+  default     = "fonsah-logs-and-backend"
+}
+
+variable "dynamodb_name" {
+  description = "name of dynamodb table to lock our state file"
+  type        = string
+  default     = "fonsah-dynamodb-table"
+}
+
+variable "hash_key" {
+  description = "primary key of our table"
+  type        = string
+  default     = "LockID"
+}
+
+variable "s3_key" {
+  description = "path in s3 to store the state file"
+  type        = string
+  default     = "terraform/tf-state/terraform.tf-state"
+}
+
+variable "billing_mode" {
+  description = "DynamoDB billing mode"
+  type        = string
+  default     = "PAY_PER_REQUEST"
 }

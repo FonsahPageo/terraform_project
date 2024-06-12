@@ -39,6 +39,7 @@ resource "aws_subnet" "fonsah_subnet" {
   vpc_id            = each.value.vpc_id
   cidr_block        = cidrsubnet(each.value.vpc_cidr, 8, index(var.availability_zones, each.value.az) * length(var.subnet_suffixes) + index(var.subnet_suffixes, each.value.suffix))
   availability_zone = each.value.az
+  map_public_ip_on_launch = each.key == "1-a"
 
   tags = {
     Name = "fonsah-SN-${each.key}"
@@ -92,7 +93,7 @@ resource "aws_route" "fonsat_nat_route" {
 }
 
 resource "aws_iam_role" "fonsah_role" {
-  name = var.role_name
+  name = var.iam_role_name
   assume_role_policy = jsonencode({
     Version: "2012-10-17"
     Statement: [
@@ -108,7 +109,7 @@ resource "aws_iam_role" "fonsah_role" {
 }
 
 resource "aws_iam_role_policy" "fonsah_policy" {
-  name = var.policy_name
+  name = var.iam_policy_name
   role = aws_iam_role.fonsah_role.id
   policy = jsonencode({
     Version: "2012-10-17"

@@ -37,7 +37,7 @@ resource "aws_instance" "fonsah_instance" {
 
   ami = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
-  key_name = var.key_name
+  key_name = var.instance_key
   subnet_id = each.value.id
   
   tags = {
