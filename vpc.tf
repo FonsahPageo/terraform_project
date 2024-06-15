@@ -1,5 +1,9 @@
 locals {
   vpc_map = { for idx in range(1, length(var.vpc_cidr_blocks) + 1) : idx => { cidr = var.vpc_cidr_blocks[idx - 1], name = var.vpc_tags[idx - 1] } }
+  
+  vpc_id_to_key = {
+    for key, vpc in aws_vpc.fonsah_vpc : vpc.id => key
+  }
 
   subnets = flatten([
     for vpc_idx in range(1, length(var.vpc_cidr_blocks) + 1) : [
@@ -14,6 +18,7 @@ locals {
   ])
 }
 
+# VPCs
 resource "aws_vpc" "fonsah_vpc" {
   for_each   = local.vpc_map
   cidr_block = each.value.cidr
@@ -23,6 +28,7 @@ resource "aws_vpc" "fonsah_vpc" {
   }
 }
 
+# Internet Gateway
 resource "aws_internet_gateway" "fonsah_ig" {
   vpc_id = aws_vpc.fonsah_vpc[1].id
 
@@ -31,6 +37,7 @@ resource "aws_internet_gateway" "fonsah_ig" {
   }
 }
 
+# Subnets
 resource "aws_subnet" "fonsah_subnet" {
   for_each = {
     for subnet in local.subnets : "${subnet.vpc_idx}-${subnet.suffix}" => subnet
@@ -46,6 +53,7 @@ resource "aws_subnet" "fonsah_subnet" {
   }
 }
 
+# route tables
 resource "aws_route_table" "fonsah_rt" {
   for_each = aws_subnet.fonsah_subnet
 
@@ -56,13 +64,14 @@ resource "aws_route_table" "fonsah_rt" {
   })
 }
 
+# routes
 resource "aws_route" "fonsah_route" {
   count = 1
   route_table_id = element([for rt in aws_route_table.fonsah_rt : rt.id if rt.vpc_id == aws_vpc.fonsah_vpc[1].id], 0)
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.fonsah_ig.id
 }
-
+# route table associations
 resource "aws_route_table_association" "fonsah_associate_rt" {
   for_each = aws_subnet.fonsah_subnet
 
@@ -70,12 +79,14 @@ resource "aws_route_table_association" "fonsah_associate_rt" {
   route_table_id = aws_route_table.fonsah_rt[each.key].id
 }
 
+# elastic IP
 resource "aws_eip" "fonsah_eip" {
   tags = {
     Name = var.eip_tag
   }
 }
 
+# NAT Gateway
 resource "aws_nat_gateway" "fonsah_nat_gw" {
   depends_on = [ aws_internet_gateway.fonsah_ig ]
   allocation_id = aws_eip.fonsah_eip.id
@@ -85,6 +96,7 @@ resource "aws_nat_gateway" "fonsah_nat_gw" {
   }
 }
 
+# NAT Gateway Route
 resource "aws_route" "fonsat_nat_route" {
   route_table_id = aws_route_table.fonsah_rt["1-b"].id
   destination_cidr_block = "0.0.0.0/0"
@@ -92,6 +104,7 @@ resource "aws_route" "fonsat_nat_route" {
   depends_on = [aws_nat_gateway.fonsah_nat_gw]
 }
 
+# Flow logs role
 resource "aws_iam_role" "fonsah_role" {
   name = var.iam_role_name
   assume_role_policy = jsonencode({
@@ -108,6 +121,7 @@ resource "aws_iam_role" "fonsah_role" {
   })
 }
 
+# flow logs role policy
 resource "aws_iam_role_policy" "fonsah_policy" {
   name = var.iam_policy_name
   role = aws_iam_role.fonsah_role.id
@@ -126,6 +140,7 @@ resource "aws_iam_role_policy" "fonsah_policy" {
   })
 }
 
+# cloudwatch log group
 resource "aws_cloudwatch_log_group" "fonsah_log_group" {
   name = var.log_group_name
   retention_in_days = var.log_retention_period
@@ -140,6 +155,19 @@ resource "aws_flow_log" "fonsah_flow_log" {
   depends_on = [ aws_iam_role.fonsah_role ]
 
   tags = {
-    Name = "Fonsah-project-flow-log"
+    Name = var.flow_log_name
+  }
+}
+
+# S3 endpoint
+resource "aws_vpc_endpoint" "fonsah_s3_endpoint" {
+  vpc_id = aws_vpc.fonsah_vpc["1"].id
+  service_name = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = [for rt in aws_route_table.fonsah_rt : rt.id if rt.vpc_id == aws_vpc.fonsah_vpc["1"].id]
+
+  tags = {
+    Name = var.endpoint_name
   }
 }

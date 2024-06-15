@@ -23,23 +23,38 @@ resource "aws_security_group" "fonsah_sg" {
       cidr_blocks = egress.value.cidr_blocks
     }
   }
-  tags = merge(var.sg_tag,{
+  tags = merge(var.sg_tag, {
     Name = "fonsah-SG-${each.key}"
   })
 }
 
-data "aws_ami" "ubuntu" {
+data "aws_ami" "fonsah_ubuntu" {
   most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  owners = ["099720109477"]
 }
 
 resource "aws_instance" "fonsah_instance" {
   for_each = aws_subnet.fonsah_subnet
 
-  ami = data.aws_ami.ubuntu.id
+  ami           = data.aws_ami.fonsah_ubuntu.id
   instance_type = var.instance_type
-  key_name = var.instance_key
-  subnet_id = each.value.id
-  
+  key_name      = var.instance_key
+  subnet_id     = each.value.id
+  vpc_security_group_ids = [
+    aws_security_group.fonsah_sg[local.vpc_id_to_key[each.value.vpc_id]].id
+  ]
+
   tags = {
     Name = "fonsah-server-${each.key}"
   }

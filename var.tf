@@ -187,3 +187,15 @@ variable "billing_mode" {
   type        = string
   default     = "PAY_PER_REQUEST"
 }
+
+variable "flow_log_name" {
+  description = "name of our flow log"
+  type = string
+  default = "Fonsah-project-flow-log"
+}
+
+variable "endpoint_name" {
+  description = "name of our S3 Endpoint"
+  type = string
+  default = "fonsah-s3-endpoint"
+}
