@@ -199,3 +199,9 @@ variable "endpoint_name" {
   type = string
   default = "fonsah-s3-endpoint"
 }
+
+variable "nat_rt_tag" {
+  description = "name of the route table for our NAT gateway"
+  type = string
+  default = "fonsah-NAT-RT"
+}

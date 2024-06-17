@@ -1,6 +1,6 @@
 locals {
   vpc_map = { for idx in range(1, length(var.vpc_cidr_blocks) + 1) : idx => { cidr = var.vpc_cidr_blocks[idx - 1], name = var.vpc_tags[idx - 1] } }
-  
+
   vpc_id_to_key = {
     for key, vpc in aws_vpc.fonsah_vpc : vpc.id => key
   }
@@ -40,13 +40,13 @@ resource "aws_internet_gateway" "fonsah_ig" {
 # Subnets
 resource "aws_subnet" "fonsah_subnet" {
   for_each = {
-    for subnet in local.subnets : "${subnet.vpc_idx}-${subnet.suffix}" => subnet
+    for subnet in local.subnets : "${subnet.vpc_idx}${subnet.suffix}" => subnet
   }
 
   vpc_id            = each.value.vpc_id
   cidr_block        = cidrsubnet(each.value.vpc_cidr, 8, index(var.availability_zones, each.value.az) * length(var.subnet_suffixes) + index(var.subnet_suffixes, each.value.suffix))
   availability_zone = each.value.az
-  map_public_ip_on_launch = each.key == "1-a"
+  map_public_ip_on_launch = each.key == "1a"
 
   tags = {
     Name = "fonsah-SN-${each.key}"
@@ -55,28 +55,56 @@ resource "aws_subnet" "fonsah_subnet" {
 
 # route tables
 resource "aws_route_table" "fonsah_rt" {
-  for_each = aws_subnet.fonsah_subnet
+  for_each = local.vpc_map
 
-  vpc_id = each.value.vpc_id
+  vpc_id = aws_vpc.fonsah_vpc[each.key].id
 
   tags = merge(var.rt_tags, {
     Name = "fonsah-RT-${each.key}"
   })
 }
 
+# NAT Gateway route table
+resource "aws_route_table" "fonsah_nat_rt" {
+  vpc_id = aws_vpc.fonsah_vpc[1].id
+
+  tags = {
+    Name = var.nat_rt_tag
+  }
+}
+
 # routes
+# VPC routes
 resource "aws_route" "fonsah_route" {
   count = 1
   route_table_id = element([for rt in aws_route_table.fonsah_rt : rt.id if rt.vpc_id == aws_vpc.fonsah_vpc[1].id], 0)
+  # route_table_id = aws_route_table.fonsah_rt[1].id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.fonsah_ig.id
 }
+
+# NAT Gateway Route
+resource "aws_route" "fonsat_nat_route" {
+  count = 1
+  route_table_id = aws_route_table.fonsah_nat_rt.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.fonsah_nat_gw.id
+  depends_on = [aws_nat_gateway.fonsah_nat_gw]
+}
+
 # route table associations
 resource "aws_route_table_association" "fonsah_associate_rt" {
   for_each = aws_subnet.fonsah_subnet
 
   subnet_id = each.value.id
-  route_table_id = aws_route_table.fonsah_rt[each.key].id
+  route_table_id = aws_route_table.fonsah_rt[local.vpc_id_to_key[each.value.vpc_id]].id
+}
+
+# NAT Gateway route table associations
+resource "aws_route_table_association" "fonsah_associate_nat_rt" {
+  count = length(var.availability_zones)
+  subnet_id = element([for subnet in aws_subnet.fonsah_subnet : subnet.id if substr(subnet.availability_zone, -1, 1) == "b"], count.index)
+  route_table_id = aws_route_table.fonsah_nat_rt.id
 }
 
 # elastic IP
@@ -90,18 +118,10 @@ resource "aws_eip" "fonsah_eip" {
 resource "aws_nat_gateway" "fonsah_nat_gw" {
   depends_on = [ aws_internet_gateway.fonsah_ig ]
   allocation_id = aws_eip.fonsah_eip.id
-  subnet_id     = aws_subnet.fonsah_subnet["1-a"].id
+  subnet_id     = aws_subnet.fonsah_subnet["1a"].id
   tags = {
     Name = var.nat_tag
   }
-}
-
-# NAT Gateway Route
-resource "aws_route" "fonsat_nat_route" {
-  route_table_id = aws_route_table.fonsah_rt["1-b"].id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id = aws_nat_gateway.fonsah_nat_gw.id
-  depends_on = [aws_nat_gateway.fonsah_nat_gw]
 }
 
 # Flow logs role
